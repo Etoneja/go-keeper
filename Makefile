@@ -9,6 +9,9 @@ migrate-down:
 migrate-version:
 	go run cmd/migrate/main.go version
 
+genproto:
+	protoc --go_out=. --go-grpc_out=. internal/proto/api.proto --go_opt=default_api_level=API_OPAQUE
+
 test:
 	@go test -v ./...
 
