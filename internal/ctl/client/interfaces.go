@@ -13,8 +13,8 @@ type Clienter interface {
 	Login(ctx context.Context) error
 	Register(ctx context.Context) (string, error)
 
-	SetSecret(ctx context.Context, secret types.Secreter) error
-	GetSecret(ctx context.Context, secretID string) (types.Secreter, error)
+	SetSecret(ctx context.Context, secret *types.RemoteSecret) error
+	GetSecret(ctx context.Context, secretID string) (*types.RemoteSecret, error)
 	DeleteSecret(ctx context.Context, secretID string) error
-	ListSecrets(ctx context.Context) ([]types.Secreter, error)
+	ListSecrets(ctx context.Context) ([]*types.RemoteSecret, error)
 }

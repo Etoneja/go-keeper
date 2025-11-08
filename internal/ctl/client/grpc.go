@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/etoneja/go-keeper/internal/ctl/config"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 	"github.com/etoneja/go-keeper/internal/proto"
 	"google.golang.org/grpc"
@@ -19,21 +18,29 @@ var (
 )
 
 type Client struct {
+	conn         *grpc.ClientConn
 	authClient   proto.AuthServiceClient
 	secretClient proto.SecretServiceClient
-	conn         *grpc.ClientConn
-	token        string
-	cfg          *config.Config
+
+	serverAddress string
+
+	login    string
+	password string
+
+	token string
 }
 
-func NewGRPCClient(cfg *config.Config) *Client {
+func NewGRPCClient(serverAddress string, login string, password string) *Client {
+
 	return &Client{
-		cfg: cfg,
+		serverAddress: serverAddress,
+		login:         login,
+		password:      password,
 	}
 }
 
 func (c *Client) Connect(ctx context.Context) error {
-	conn, err := grpc.NewClient(c.cfg.ServerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(c.serverAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -54,8 +61,8 @@ func (c *Client) Close() error {
 
 func (c *Client) Login(ctx context.Context) error {
 	req := &proto.LoginRequest{}
-	req.SetLogin(c.cfg.Login)
-	req.SetPassword(c.cfg.Password)
+	req.SetLogin(c.login)
+	req.SetPassword(c.password)
 
 	resp, err := c.authClient.Login(ctx, req)
 	if err != nil {
@@ -68,8 +75,8 @@ func (c *Client) Login(ctx context.Context) error {
 
 func (c *Client) Register(ctx context.Context) (string, error) {
 	req := &proto.RegisterRequest{}
-	req.SetLogin(c.cfg.Login)
-	req.SetPassword(c.cfg.Password)
+	req.SetLogin(c.login)
+	req.SetPassword(c.password)
 
 	resp, err := c.authClient.Register(ctx, req)
 	if err != nil {
@@ -114,12 +121,12 @@ func (c *Client) createAuthContext(ctx context.Context) context.Context {
 }
 
 // Secret methods with auto-auth
-func (c *Client) SetSecret(ctx context.Context, secret types.Secreter) error {
+func (c *Client) SetSecret(ctx context.Context, secret *types.RemoteSecret) error {
 	reqSecret := &proto.Secret{}
-	reqSecret.SetId(secret.GetUUID())
-	reqSecret.SetLastModified(timestamppb.New(secret.GetLastModified()))
-	reqSecret.SetHash(secret.GetHash())
-	reqSecret.SetData(secret.GetData())
+	reqSecret.SetId(secret.UUID)
+	reqSecret.SetLastModified(timestamppb.New(secret.LastModified))
+	reqSecret.SetHash(secret.Hash)
+	reqSecret.SetData(secret.Data)
 
 	req := &proto.SetSecretRequest{}
 	req.SetSecret(reqSecret)
@@ -130,7 +137,7 @@ func (c *Client) SetSecret(ctx context.Context, secret types.Secreter) error {
 	})
 }
 
-func (c *Client) GetSecret(ctx context.Context, secretID string) (types.Secreter, error) {
+func (c *Client) GetSecret(ctx context.Context, secretID string) (*types.RemoteSecret, error) {
 	var resp *proto.GetSecretResponse
 
 	req := &proto.GetSecretRequest{}
@@ -166,7 +173,7 @@ func (c *Client) DeleteSecret(ctx context.Context, secretID string) error {
 	})
 }
 
-func (c *Client) ListSecrets(ctx context.Context) ([]types.Secreter, error) {
+func (c *Client) ListSecrets(ctx context.Context) ([]*types.RemoteSecret, error) {
 	var resp *proto.ListSecretsResponse
 	err := c.withAuthRetry(ctx, func(authCtx context.Context) error {
 		var err error
@@ -178,7 +185,7 @@ func (c *Client) ListSecrets(ctx context.Context) ([]types.Secreter, error) {
 	}
 
 	secretsResp := resp.GetSecrets()
-	secrets := make([]types.Secreter, len(secretsResp))
+	secrets := make([]*types.RemoteSecret, len(secretsResp))
 	for i, secretResp := range secretsResp {
 		secrets[i] = &types.RemoteSecret{
 			UUID:         secretResp.GetId(),

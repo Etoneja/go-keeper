@@ -1,12 +1,12 @@
 package types
 
 type CheckPair struct {
-	Local  Secreter
-	Remote Secreter
+	Local  *LocalSecret
+	Remote *RemoteSecret
 }
 
-type SecretDiff struct {
-	LocalOnly  []Secreter
-	RemoteOnly []Secreter
+type SecretsDiff struct {
+	LocalOnly  []*LocalSecret
+	RemoteOnly []*RemoteSecret
 	Both       []*CheckPair
 }

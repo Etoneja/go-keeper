@@ -10,10 +10,10 @@ var addCmd = &cobra.Command{
 	Short: "Add a new secret",
 }
 
-var addPasswordCmd = createSecretAddCommand(constants.TypePassword)
-var addTextCmd = createSecretAddCommand(constants.TypeText)
-var addBinaryCmd = createSecretAddCommand(constants.TypeBinary)
-var addCardCmd = createSecretAddCommand(constants.TypeCard)
+var addPasswordCmd = createSecretAddCommand(constants.SecretTypePassword)
+var addTextCmd = createSecretAddCommand(constants.SecretTypeText)
+var addBinaryCmd = createSecretAddCommand(constants.SecretTypeBinary)
+var addCardCmd = createSecretAddCommand(constants.SecretTypeCard)
 
 var getCmd = &cobra.Command{
 	Use:   "get [uuid]",

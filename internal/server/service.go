@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUserAlreadyExists  = errors.New("user already exists")
 	ErrSecretTooLarge     = errors.New("secret data too large")
@@ -64,7 +65,7 @@ func (s *Service) Register(ctx context.Context, login, password string) (*types.
 func (s *Service) Login(ctx context.Context, login, password string) (string, *types.User, error) {
 	user, err := s.repos.UserRepo.GetUserByLogin(ctx, s.db, login)
 	if err != nil {
-		return "", nil, ErrInvalidCredentials
+		return "", nil, ErrUserNotFound
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))

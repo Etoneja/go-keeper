@@ -34,10 +34,12 @@ func (c *SecretDataContainer) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	parsedData, err := ParseSecretData(c.Type, aux.SecretData)
+	parsedData, err := parseSecretData(c.Type, aux.SecretData)
 	if err != nil {
 		return err
 	}
+
 	c.SecretData = parsedData
+
 	return nil
 }

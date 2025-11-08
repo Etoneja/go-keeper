@@ -36,18 +36,17 @@ func runPrompt(prompt promptui.Select) (ActionType, error) {
 		return "", err
 	}
 
-	switch result {
-	case ActionDeleteLocal.String():
-		return ActionDeleteLocal, nil
-	case ActionCreateRemote.String():
-		return ActionCreateRemote, nil
-	case ActionCreateLocal.String():
-		return ActionCreateLocal, nil
-	case ActionDeleteRemote.String():
-		return ActionDeleteRemote, nil
-	case ActionSkip.String():
-		return ActionSkip, nil
-	default:
-		return "", fmt.Errorf("unknown action: %s", result)
+	actionMap := map[string]ActionType{
+		ActionDeleteLocal.String():  ActionDeleteLocal,
+		ActionCreateRemote.String(): ActionCreateRemote,
+		ActionCreateLocal.String():  ActionCreateLocal,
+		ActionDeleteRemote.String(): ActionDeleteRemote,
+		ActionSkip.String():         ActionSkip,
 	}
+
+	if action, exists := actionMap[result]; exists {
+		return action, nil
+	}
+
+	return "", fmt.Errorf("unknown action: %s", result)
 }

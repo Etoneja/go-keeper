@@ -22,25 +22,25 @@ func createSecretAddCommand(secretType string) *cobra.Command {
 
 func createSecretHandler(secretType string) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		base := types.BaseModel{
-			Name:     getStringFlag(cmd, "name"),
+		base := types.BaseSecret{
 			Type:     secretType,
+			Name:     getStringFlag(cmd, "name"),
 			Metadata: getStringFlag(cmd, "metadata"),
 		}
 
 		var data types.SecretData
 		switch secretType {
-		case constants.TypePassword:
+		case constants.SecretTypePassword:
 			data = types.LoginData{
 				Username: getStringFlag(cmd, "username"),
 				Password: getStringFlag(cmd, "password"),
 				URL:      getStringFlag(cmd, "url"),
 			}
-		case constants.TypeText:
+		case constants.SecretTypeText:
 			data = types.TextData{
 				Content: getStringFlag(cmd, "content"),
 			}
-		case constants.TypeBinary:
+		case constants.SecretTypeBinary:
 			filePath := getStringFlag(cmd, "file")
 			if err := CheckFileSize(filePath); err != nil {
 				return err
@@ -54,7 +54,7 @@ func createSecretHandler(secretType string) func(cmd *cobra.Command, args []stri
 				FileSize: int64(len(content)),
 				Content:  base64.StdEncoding.EncodeToString(content),
 			}
-		case constants.TypeCard:
+		case constants.SecretTypeCard:
 			data = types.CardData{
 				Number: getStringFlag(cmd, "number"),
 				Holder: getStringFlag(cmd, "holder"),
@@ -67,12 +67,12 @@ func createSecretHandler(secretType string) func(cmd *cobra.Command, args []stri
 
 		app := getAppFromCommand(cmd)
 
-		secret, err := types.NewSecretModel(base, data, app.service.crypter)
+		secret, err := types.NewSecretModel(base, data, app.service.cryptor)
 		if err != nil {
 			return err
 		}
 
-		createdSecret, err := app.service.CreateSecret(context.Background(), secret)
+		createdSecret, err := app.service.CreateLocalSecret(context.Background(), secret)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ func createSecretGetCommand() func(cmd *cobra.Command, args []string) error {
 
 		app := getAppFromCommand(cmd)
 
-		secret, err := app.service.GetSecret(context.Background(), uuid)
+		secret, err := app.service.GetLocalSecret(context.Background(), uuid)
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func createSecretDeleteCommand() func(cmd *cobra.Command, args []string) error {
 
 		app := getAppFromCommand(cmd)
 
-		err := app.service.DeleteSecret(context.Background(), uuid)
+		err := app.service.DeleteLocalSecret(context.Background(), uuid)
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func createSecretsListCommand() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		app := getAppFromCommand(cmd)
 
-		secrets, err := app.service.ListSecrets(context.Background())
+		secrets, err := app.service.ListLocalSecrets(context.Background())
 		if err != nil {
 			return err
 		}

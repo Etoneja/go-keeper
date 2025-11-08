@@ -3,29 +3,64 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"os"
 
+	"github.com/etoneja/go-keeper/internal/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/errs"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
-	_ "modernc.org/sqlite"
 )
 
 type SQLiteStorage struct {
-	db *sql.DB
+	db      *sql.DB
+	cryptor crypto.Cryptor
+	path    string
+	isDirty bool
 }
 
-// TODO: add storage encryption and decryption
-func NewSQLiteStorage(dbPath string) (*SQLiteStorage, error) {
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+func (s *SQLiteStorage) markClean() {
+	s.isDirty = false
+}
+
+func (s *SQLiteStorage) markDirty() {
+	s.isDirty = true
+}
+
+func (s *SQLiteStorage) dump() error {
+	if !s.isDirty {
+		return nil
 	}
 
-	storage := &SQLiteStorage{db: db}
-	return storage, nil
+	decryptedBytes, err := serializeInMemoryDBToBytes(context.Background(), s.db)
+	if err != nil {
+		return err
+	}
+
+	encryptedData, err := s.cryptor.EncryptStorageData(decryptedBytes)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt db: %w", err)
+	}
+
+	if err := os.WriteFile(s.path, encryptedData, 0600); err != nil {
+		return fmt.Errorf("failed to write db file: %w", err)
+	}
+
+	s.markClean()
+
+	return nil
 }
 
-func (s *SQLiteStorage) CreateSchema(ctx context.Context) error {
+func (s *SQLiteStorage) Close() error {
+	err := s.dump()
+	if err != nil {
+		return err
+	}
+
+	return s.db.Close()
+}
+
+func (s *SQLiteStorage) createSchema(ctx context.Context) error {
 	query := `
 	CREATE TABLE secrets (
 		uuid TEXT PRIMARY KEY,
@@ -37,12 +72,17 @@ func (s *SQLiteStorage) CreateSchema(ctx context.Context) error {
 		data BLOB NOT NULL
 	);
 	`
-
 	_, err := s.db.ExecContext(ctx, query)
-	return err
+	if err != nil {
+		return err
+	}
+
+	s.markDirty()
+
+	return nil
 }
 
-func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.Secret) (*types.Secret, error) {
+func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.LocalSecret) (*types.LocalSecret, error) {
 	query := `
 		INSERT INTO secrets (uuid, type, name, last_modified, hash, metadata, data)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -61,10 +101,12 @@ func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.Secret) 
 		return nil, err
 	}
 
+	s.markDirty()
+
 	return secret, nil
 }
 
-func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secret, error) {
+func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.LocalSecret, error) {
 	query := `
 		SELECT uuid, type, name, last_modified, hash, metadata, data
 		FROM secrets
@@ -73,7 +115,7 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secr
 
 	row := s.db.QueryRowContext(ctx, query, uuid)
 
-	secret := &types.Secret{}
+	secret := &types.LocalSecret{}
 
 	err := row.Scan(
 		&secret.UUID,
@@ -85,7 +127,7 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secr
 		&secret.Data,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errs.NewSecretNotFoundError(uuid)
 		}
 		return nil, err
@@ -94,7 +136,7 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secr
 	return secret, nil
 }
 
-func (s *SQLiteStorage) UpdateSecret(ctx context.Context, secret *types.Secret) error {
+func (s *SQLiteStorage) UpdateSecret(ctx context.Context, secret *types.LocalSecret) error {
 	query := `
 		UPDATE secrets 
 		SET type = ?, name = ?, last_modified = ?, hash = ?, metadata = ?, data = ?
@@ -110,16 +152,28 @@ func (s *SQLiteStorage) UpdateSecret(ctx context.Context, secret *types.Secret) 
 		secret.Data,
 		secret.UUID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	s.markDirty()
+
+	return nil
 }
 
 func (s *SQLiteStorage) DeleteSecret(ctx context.Context, uuid string) error {
 	query := `DELETE FROM secrets WHERE uuid = ?`
 	_, err := s.db.ExecContext(ctx, query, uuid)
-	return err
+	if err != nil {
+		return err
+	}
+
+	s.markDirty()
+
+	return nil
 }
 
-func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error) {
+func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.LocalSecret, error) {
 	query := `
 		SELECT uuid, type, name, last_modified, hash, metadata
 		FROM secrets
@@ -132,9 +186,9 @@ func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error
 	}
 	defer rows.Close()
 
-	var secrets []*types.Secret
+	var secrets []*types.LocalSecret
 	for rows.Next() {
-		secret := &types.Secret{}
+		secret := &types.LocalSecret{}
 
 		err := rows.Scan(
 			&secret.UUID,
@@ -142,6 +196,8 @@ func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error
 			&secret.Name,
 			&secret.LastModified,
 			&secret.Hash,
+			// NOTE: Do not fetch data for listing
+			// &secret.Data,
 			&secret.Metadata,
 		)
 		if err != nil {
@@ -152,8 +208,4 @@ func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error
 	}
 
 	return secrets, nil
-}
-
-func (s *SQLiteStorage) Close() error {
-	return s.db.Close()
 }

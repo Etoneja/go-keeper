@@ -9,13 +9,14 @@ import (
 
 func main() {
 	_ = godotenv.Load()
+
 	app, err := ctl.NewApp()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer app.Close()
 
-	if err := app.GetCmd().Execute(); err != nil {
+	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

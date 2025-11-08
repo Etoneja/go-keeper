@@ -2,18 +2,18 @@ package ctl
 
 import "github.com/etoneja/go-keeper/internal/ctl/types"
 
-func diffSecrets(local []*types.Secret, remote []types.Secreter) *types.SecretDiff {
-	localMap := make(map[string]*types.Secret)
-	remoteMap := make(map[string]types.Secreter)
+func diffSecrets(local []*types.LocalSecret, remote []*types.RemoteSecret) *types.SecretsDiff {
+	localMap := make(map[string]*types.LocalSecret)
+	remoteMap := make(map[string]*types.RemoteSecret)
 
 	for _, secret := range local {
 		localMap[secret.UUID] = secret
 	}
 	for _, secret := range remote {
-		remoteMap[secret.GetUUID()] = secret
+		remoteMap[secret.UUID] = secret
 	}
 
-	diff := &types.SecretDiff{}
+	diff := &types.SecretsDiff{}
 
 	for id, secret := range localMap {
 		if _, exists := remoteMap[id]; !exists {

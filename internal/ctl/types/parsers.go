@@ -7,25 +7,25 @@ import (
 	"github.com/etoneja/go-keeper/internal/ctl/constants"
 )
 
-func ParseSecretData(dataType string, inData []byte) (SecretData, error) {
-	switch dataType {
-	case constants.TypePassword:
+func parseSecretData(secretType string, inData []byte) (SecretData, error) {
+	switch secretType {
+	case constants.SecretTypePassword:
 		var outData LoginData
 		err := json.Unmarshal(inData, &outData)
 		return outData, err
-	case constants.TypeText:
+	case constants.SecretTypeText:
 		var outData TextData
 		err := json.Unmarshal(inData, &outData)
 		return outData, err
-	case constants.TypeBinary:
+	case constants.SecretTypeBinary:
 		var outData FileData
 		err := json.Unmarshal(inData, &outData)
 		return outData, err
-	case constants.TypeCard:
+	case constants.SecretTypeCard:
 		var outData CardData
 		err := json.Unmarshal(inData, &outData)
 		return outData, err
 	default:
-		return nil, fmt.Errorf("unknown secret type: %s", dataType)
+		return nil, fmt.Errorf("unknown secret type: %s", secretType)
 	}
 }

@@ -15,6 +15,7 @@ const (
 
 type App struct {
 	cfg     *config.Config
+	cmd     *cobra.Command
 	service *VaultService
 }
 
@@ -23,44 +24,37 @@ func NewApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &App{
-		cfg: cfg,
-	}, nil
+
+	app := &App{cfg: cfg}
+	app.setupCommands()
+	return app, nil
 }
 
-func (a *App) GetCmd() *cobra.Command {
+func (a *App) Run() error {
+	return a.cmd.Execute()
+}
+
+func (a *App) setupCommands() {
 	rootCmd := &cobra.Command{
-		Use:               "vault",
-		Short:             "Zero-Knowledge secret manager",
-		PersistentPreRunE: a.initializeService,
+		Use:              "vault",
+		Short:            "Zero-Knowledge secret manager",
+		PersistentPreRun: a.initializeService,
 	}
 
 	ctx := context.WithValue(context.Background(), appContextKey, a)
 	rootCmd.SetContext(ctx)
 
 	addCommands(rootCmd)
-	return rootCmd
+	a.cmd = rootCmd
 }
 
-func (a *App) initializeService(cmd *cobra.Command, args []string) error {
+func (a *App) initializeService(cmd *cobra.Command, args []string) {
 	service := NewVaultService(a.cfg)
 	a.service = service
-	return nil
 }
 
 func (a *App) Close() {
 	if a.service != nil {
 		a.service.Close()
 	}
-}
-
-func addCommands(rootCmd *cobra.Command) {
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(versionCmd)
-	rootCmd.AddCommand(registerCmd)
-	rootCmd.AddCommand(addCmd)
-	rootCmd.AddCommand(getCmd)
-	rootCmd.AddCommand(deleteCmd)
-	rootCmd.AddCommand(listCmd)
-	rootCmd.AddCommand(syncCmd)
 }

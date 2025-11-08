@@ -52,6 +52,17 @@ func init() {
 	addCmd.AddCommand(addCardCmd)
 }
 
+func addCommands(rootCmd *cobra.Command) {
+	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(registerCmd)
+	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(getCmd)
+	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(syncCmd)
+}
+
 func getAppFromCommand(cmd *cobra.Command) *App {
 	rootCmd := cmd.Root()
 	app, ok := rootCmd.Context().Value(appContextKey).(*App)

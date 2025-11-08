@@ -9,11 +9,12 @@ import (
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
-func exportSecret(secret *types.Secret, exportPath string) error {
+func exportSecret(secret *types.LocalSecret, exportPath string) error {
 	data, err := secret.ParseData()
 	if err != nil {
 		return err
 	}
+
 	switch data := data.(type) {
 	case types.FileData:
 		content, err := base64.StdEncoding.DecodeString(data.Content)

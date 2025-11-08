@@ -11,20 +11,14 @@ import (
 )
 
 var typeMap = map[string]any{
-	constants.TypePassword: LoginData{},
-	constants.TypeText:     TextData{},
-	constants.TypeBinary:   FileData{},
-	constants.TypeCard:     CardData{},
+	constants.SecretTypePassword: LoginData{},
+	constants.SecretTypeText:     TextData{},
+	constants.SecretTypeBinary:   FileData{},
+	constants.SecretTypeCard:     CardData{},
 }
 
-type BaseModel struct {
-	Name     string
-	Type     string
-	Metadata string
-}
-
-func NewSecretModel(base BaseModel, data SecretData, crypter crypto.Crypter) (*Secret, error) {
-	if err := validateBaseModel(base, data); err != nil {
+func NewSecretModel(base BaseSecret, data SecretData, cryptor crypto.Cryptor) (*LocalSecret, error) {
+	if err := validateBaseSecret(base, data); err != nil {
 		return nil, err
 	}
 
@@ -32,7 +26,7 @@ func NewSecretModel(base BaseModel, data SecretData, crypter crypto.Crypter) (*S
 		return nil, fmt.Errorf("data validation failed: %w", err)
 	}
 
-	secret := &Secret{
+	secret := &LocalSecret{
 		UUID:         uuid.New().String(),
 		Type:         base.Type,
 		Name:         base.Name,
@@ -40,14 +34,14 @@ func NewSecretModel(base BaseModel, data SecretData, crypter crypto.Crypter) (*S
 		Metadata:     base.Metadata,
 	}
 
-	if err := secret.SetData(data, crypter); err != nil {
+	if err := secret.SetData(cryptor, data); err != nil {
 		return nil, err
 	}
 	return secret, nil
 
 }
 
-func validateBaseModel(base BaseModel, data SecretData) error {
+func validateBaseSecret(base BaseSecret, data SecretData) error {
 	if base.Type == "" {
 		return fmt.Errorf("type is required")
 	}

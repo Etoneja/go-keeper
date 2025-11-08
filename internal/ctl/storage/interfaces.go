@@ -5,18 +5,12 @@ import (
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
-// Storager defines the interface for secret storage
 type Storager interface {
-	// CreateSchema creates the storage schema
-	CreateSchema(ctx context.Context) error
+	CreateSecret(ctx context.Context, secret *types.LocalSecret) (*types.LocalSecret, error)
+	GetSecret(ctx context.Context, secretID string) (*types.LocalSecret, error)
+	UpdateSecret(ctx context.Context, secret *types.LocalSecret) error
+	DeleteSecret(ctx context.Context, secretID string) error
+	ListSecrets(ctx context.Context) ([]*types.LocalSecret, error)
 
-	// Secrets management
-	CreateSecret(ctx context.Context, secret *types.Secret) (*types.Secret, error)
-	GetSecret(ctx context.Context, uuid string) (*types.Secret, error)
-	UpdateSecret(ctx context.Context, secret *types.Secret) error
-	DeleteSecret(ctx context.Context, uuid string) error
-	ListSecrets(ctx context.Context) ([]*types.Secret, error)
-
-	// Close cleans up resources
 	Close() error
 }

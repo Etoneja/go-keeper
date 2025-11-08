@@ -2,13 +2,12 @@ package ctl
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
-func (s *VaultService) getDiff(ctx context.Context) (*types.SecretDiff, error) {
+func (s *VaultService) getDiff(ctx context.Context) (*types.SecretsDiff, error) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -33,7 +32,7 @@ func (s *VaultService) getDiff(ctx context.Context) (*types.SecretDiff, error) {
 	return diff, err
 }
 
-func (s *VaultService) processDiff(ctx context.Context, diff *types.SecretDiff) error {
+func (s *VaultService) processDiff(ctx context.Context, diff *types.SecretsDiff) error {
 	fmt.Printf("local_only: %d, remote_only: %d, both: %d\n",
 		len(diff.LocalOnly), len(diff.RemoteOnly), len(diff.Both))
 
@@ -53,28 +52,28 @@ func (s *VaultService) processDiff(ctx context.Context, diff *types.SecretDiff) 
 
 	// proceed both
 	for _, pair := range diff.Both {
-		if pair.Local.GetHash() != pair.Remote.GetHash() {
+		if pair.Local.Hash != pair.Remote.Hash {
 			fmt.Printf("Secret %s has different hash: local=%s vs remote=%s\n",
-				pair.Local.GetUUID(), pair.Local.GetHash(), pair.Remote.GetHash())
+				pair.Local.UUID, pair.Local.Hash, pair.Remote.Hash)
 		}
-		fmt.Printf("%s - %s\n", pair.Local.GetLastModified(), pair.Remote.GetLastModified())
-		if pair.Local.GetLastModified().After(pair.Remote.GetLastModified()) {
-			fmt.Printf("Secret %s is newer locally\n", pair.Local.GetUUID())
+		fmt.Printf("%s - %s\n", pair.Local.LastModified, pair.Remote.LastModified)
+		if pair.Local.LastModified.After(pair.Remote.LastModified) {
+			fmt.Printf("Secret %s is newer locally\n", pair.Local.UUID)
 		}
 	}
 
 	return nil
 }
 
-func (s *VaultService) deleteLocalSecret(ctx context.Context, secretId string) error {
-	fmt.Printf("Deleting local secret '%s'\n", secretId)
+func (s *VaultService) deleteLocalSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Deleting local secret '%s'\n", secretID)
 
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = storage.DeleteSecret(ctx, secretId)
+	err = storage.DeleteSecret(ctx, secretID)
 	if err != nil {
 		return err
 	}
@@ -82,43 +81,22 @@ func (s *VaultService) deleteLocalSecret(ctx context.Context, secretId string) e
 	return nil
 }
 
-func (s *VaultService) createRemoteSecret(ctx context.Context, secretId string) error {
-	fmt.Printf("Creating remote secret '%s'\n", secretId)
+func (s *VaultService) createRemoteSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Creating remote secret '%s'\n", secretID)
 
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return err
 	}
 
-	localSecret, err := storage.GetSecret(ctx, secretId)
+	localSecret, err := storage.GetSecret(ctx, secretID)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Move to converters + add encryption
-	secretData, err := localSecret.ParseData()
+	remoteSecret, err := types.ConvertLocalSecretToRemoteSecret(s.cryptor, localSecret)
 	if err != nil {
 		return err
-	}
-
-	secretDataContainer := &types.SecretDataContainer{
-		Type:       localSecret.Type,
-		Name:       localSecret.Name,
-		SecretData: secretData,
-	}
-
-	remoteData, err := json.Marshal(secretDataContainer)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Add encryption
-
-	remoteSecret := &types.RemoteSecret{
-		UUID:         localSecret.UUID,
-		LastModified: localSecret.LastModified,
-		Hash:         localSecret.Hash,
-		Data:         remoteData,
 	}
 
 	client, err := s.getClient(ctx)
@@ -134,34 +112,19 @@ func (s *VaultService) createRemoteSecret(ctx context.Context, secretId string) 
 	return nil
 }
 
-func (s *VaultService) createLocalSecret(ctx context.Context, secretId string) error {
-	fmt.Printf("Creating local secret '%s'\n", secretId)
+func (s *VaultService) createLocalSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Creating local secret '%s'\n", secretID)
 
 	client, err := s.getClient(ctx)
 	if err != nil {
 		return err
 	}
-	remoteSecret, err := client.GetSecret(ctx, secretId)
+	remoteSecret, err := client.GetSecret(ctx, secretID)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Add decryption
-
-	var secretDataContainer types.SecretDataContainer
-	if err := json.Unmarshal(remoteSecret.GetData(), &secretDataContainer); err != nil {
-		return err
-	}
-
-	localSecret := &types.Secret{
-		UUID:         remoteSecret.GetUUID(),
-		Type:         secretDataContainer.Type,
-		Name:         secretDataContainer.Name,
-		LastModified: remoteSecret.GetLastModified(),
-		Hash:         remoteSecret.GetHash(),
-	}
-
-	err = localSecret.SetData(secretDataContainer.SecretData, s.crypter)
+	localSecret, err := types.ConvertRemoteSecretToLocalSecret(s.cryptor, remoteSecret)
 	if err != nil {
 		return err
 	}
@@ -179,15 +142,15 @@ func (s *VaultService) createLocalSecret(ctx context.Context, secretId string) e
 	return nil
 }
 
-func (s *VaultService) deleteRemoteSecret(ctx context.Context, secretId string) error {
-	fmt.Printf("Deleting remote secret '%s'\n", secretId)
+func (s *VaultService) deleteRemoteSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Deleting remote secret '%s'\n", secretID)
 
 	client, err := s.getClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = client.DeleteSecret(ctx, secretId)
+	err = client.DeleteSecret(ctx, secretID)
 	if err != nil {
 		return err
 	}
@@ -195,49 +158,49 @@ func (s *VaultService) deleteRemoteSecret(ctx context.Context, secretId string) 
 	return nil
 }
 
-func (s *VaultService) syncLocalSecret(ctx context.Context, secret types.Secreter) error {
-	action, err := PromptForLocalOnlyAction(secret.GetUUID())
+func (s *VaultService) syncLocalSecret(ctx context.Context, localSecret *types.LocalSecret) error {
+	action, err := PromptForLocalOnlyAction(localSecret.UUID)
 	if err != nil {
 		return err
 	}
 
 	switch action {
 	case ActionDeleteLocal:
-		err := s.deleteLocalSecret(ctx, secret.GetUUID())
+		err := s.deleteLocalSecret(ctx, localSecret.UUID)
 		if err != nil {
 			return err
 		}
 	case ActionCreateRemote:
-		err := s.createRemoteSecret(ctx, secret.GetUUID())
+		err := s.createRemoteSecret(ctx, localSecret.UUID)
 		if err != nil {
 			return err
 		}
 	case ActionSkip:
-		fmt.Printf("Ignoring secret '%s'\n", secret.GetUUID())
+		fmt.Printf("Ignoring secret '%s'\n", localSecret.UUID)
 	}
 
 	return nil
 }
 
-func (s *VaultService) syncRemoteSecret(ctx context.Context, secret types.Secreter) error {
-	action, err := PromptForRemoteOnlyAction(secret.GetUUID())
+func (s *VaultService) syncRemoteSecret(ctx context.Context, remoteSecret *types.RemoteSecret) error {
+	action, err := PromptForRemoteOnlyAction(remoteSecret.UUID)
 	if err != nil {
 		return err
 	}
 
 	switch action {
 	case ActionCreateLocal:
-		err := s.createLocalSecret(ctx, secret.GetUUID())
+		err := s.createLocalSecret(ctx, remoteSecret.UUID)
 		if err != nil {
 			return err
 		}
 	case ActionDeleteRemote:
-		err := s.deleteRemoteSecret(ctx, secret.GetUUID())
+		err := s.deleteRemoteSecret(ctx, remoteSecret.UUID)
 		if err != nil {
 			return err
 		}
 	case ActionSkip:
-		fmt.Printf("Ignoring secret '%s'\n", secret.GetUUID())
+		fmt.Printf("Ignoring secret '%s'\n", remoteSecret.UUID)
 	}
 
 	return nil

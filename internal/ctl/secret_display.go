@@ -9,7 +9,7 @@ import (
 
 const timeFormat = "2006-01-02 15:04:05"
 
-func displaySecrets(responses []*types.Secret) {
+func displaySecrets(responses []*types.LocalSecret) {
 	if len(responses) == 0 {
 		fmt.Println("No secrets found")
 		return
@@ -26,7 +26,7 @@ func displaySecrets(responses []*types.Secret) {
 	}
 }
 
-func displaySecret(secret *types.Secret, full bool) error {
+func displaySecret(secret *types.LocalSecret, full bool) error {
 	fmt.Printf("UUID: %s\n", secret.UUID)
 	fmt.Printf("Type: %s\n", secret.Type)
 	fmt.Printf("Name: %s\n", secret.Name)
