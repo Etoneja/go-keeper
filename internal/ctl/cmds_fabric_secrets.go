@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func createAddCommand(secretType string) *cobra.Command {
+func createSecretAddCommand(secretType string) *cobra.Command {
 	return &cobra.Command{
 		Use:   secretType,
 		Short: fmt.Sprintf("Add %s secret", secretType),
-		RunE:  createSecretHandler(secretType),
+		Run:   withErrorHandling(createSecretHandler(secretType)),
 	}
 }
 
@@ -77,7 +77,71 @@ func createSecretHandler(secretType string) func(cmd *cobra.Command, args []stri
 			return err
 		}
 
-		fmt.Printf("✅ %s secret '%s' added successfully\n\n", secretType, createdSecret.Name)
-		return displaySecret(createdSecret, false)
+		err = displaySecret(createdSecret, false)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func createSecretGetCommand() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		uuid := args[0]
+		full, _ := cmd.Flags().GetBool("full")
+		exportPath, _ := cmd.Flags().GetString("export")
+
+		app := getAppFromCommand(cmd)
+
+		secret, err := app.service.GetSecret(context.Background(), uuid)
+		if err != nil {
+			return err
+		}
+
+		if exportPath != "" {
+			err := exportSecret(secret, exportPath)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		err = displaySecret(secret, full)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func createSecretDeleteCommand() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		uuid := args[0]
+
+		app := getAppFromCommand(cmd)
+
+		err := app.service.DeleteSecret(context.Background(), uuid)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func createSecretsListCommand() func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		app := getAppFromCommand(cmd)
+
+		secrets, err := app.service.ListSecrets(context.Background())
+		if err != nil {
+			return err
+		}
+
+		displaySecrets(secrets)
+
+		return nil
 	}
 }

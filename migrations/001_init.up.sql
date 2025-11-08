@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS secrets (
     id VARCHAR(255) PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    data BYTEA NOT NULL,
+    last_modified TIMESTAMP NOT NULL,
     hash VARCHAR(255) NOT NULL,
-    last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    data BYTEA NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_secrets_user_id ON secrets(user_id);

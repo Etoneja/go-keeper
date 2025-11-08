@@ -9,7 +9,6 @@ import (
 
 var (
 	ErrSecretNotFound = errors.New("secret not found")
-	ErrSecretConflict = errors.New("secret id already exists for another user")
 )
 
 type SecretRepository struct{}
@@ -64,7 +63,10 @@ func (r *SecretRepository) GetSecret(ctx context.Context, q Querier, userID, sec
 }
 
 func (r *SecretRepository) DeleteSecret(ctx context.Context, q Querier, userID, secretID string) error {
-	query := `DELETE FROM secrets WHERE user_id = $1 AND id = $2`
+	query := `
+		DELETE FROM secrets
+		WHERE user_id = $1 AND id = $2
+	`
 
 	result, err := q.Exec(ctx, query, userID, secretID)
 	if err != nil {

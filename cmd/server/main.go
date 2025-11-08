@@ -10,12 +10,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	cfg, err := server.LoadCfg()
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
-
-	app, err := server.NewApp(cfg)
+	app, err := server.NewApp()
 	if err != nil {
 		log.Fatal("Failed to create app:", err)
 	}

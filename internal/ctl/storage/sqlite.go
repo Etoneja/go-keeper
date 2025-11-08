@@ -29,12 +29,12 @@ func (s *SQLiteStorage) CreateSchema(ctx context.Context) error {
 	query := `
 	CREATE TABLE secrets (
 		uuid TEXT PRIMARY KEY,
+		type TEXT NOT NULL,
+		name TEXT NOT NULL,
 		last_modified DATETIME NOT NULL,
 		hash TEXT NOT NULL,
-		name TEXT NOT NULL,
-		type TEXT NOT NULL,
-		data BLOB NOT NULL,
-		metadata TEXT
+		metadata TEXT,
+		data BLOB NOT NULL
 	);
 	`
 
@@ -44,18 +44,18 @@ func (s *SQLiteStorage) CreateSchema(ctx context.Context) error {
 
 func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.Secret) (*types.Secret, error) {
 	query := `
-	INSERT INTO secrets (uuid, last_modified, hash, name, type, data, metadata)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO secrets (uuid, type, name, last_modified, hash, metadata, data)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
 		secret.UUID,
+		secret.Type,
+		secret.Name,
 		secret.LastModified,
 		secret.Hash,
-		secret.Name,
-		secret.Type,
-		secret.Data,
 		secret.Metadata,
+		secret.Data,
 	)
 	if err != nil {
 		return nil, err
@@ -66,9 +66,9 @@ func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.Secret) 
 
 func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secret, error) {
 	query := `
-	SELECT uuid, last_modified, hash, name, type, data, metadata
-	FROM secrets
-	WHERE uuid = ?
+		SELECT uuid, type, name, last_modified, hash, metadata, data
+		FROM secrets
+		WHERE uuid = ?
 	`
 
 	row := s.db.QueryRowContext(ctx, query, uuid)
@@ -77,12 +77,12 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secr
 
 	err := row.Scan(
 		&secret.UUID,
+		&secret.Type,
+		&secret.Name,
 		&secret.LastModified,
 		&secret.Hash,
-		&secret.Name,
-		&secret.Type,
-		&secret.Data,
 		&secret.Metadata,
+		&secret.Data,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -96,18 +96,18 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Secr
 
 func (s *SQLiteStorage) UpdateSecret(ctx context.Context, secret *types.Secret) error {
 	query := `
-	UPDATE secrets 
-	SET last_modified = ?, hash = ?, name = ?, type = ?, data = ?, metadata = ?
-	WHERE uuid = ?
+		UPDATE secrets 
+		SET type = ?, name = ?, last_modified = ?, hash = ?, metadata = ?, data = ?
+		WHERE uuid = ?
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
+		secret.Type,
+		secret.Name,
 		secret.LastModified,
 		secret.Hash,
-		secret.Name,
-		secret.Type,
-		secret.Data,
 		secret.Metadata,
+		secret.Data,
 		secret.UUID,
 	)
 	return err
@@ -121,9 +121,9 @@ func (s *SQLiteStorage) DeleteSecret(ctx context.Context, uuid string) error {
 
 func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error) {
 	query := `
-	SELECT uuid, last_modified, hash, name, type, data, metadata
-	FROM secrets
-	ORDER BY last_modified DESC
+		SELECT uuid, type, name, last_modified, hash, metadata
+		FROM secrets
+		ORDER BY last_modified DESC
 	`
 
 	rows, err := s.db.QueryContext(ctx, query)
@@ -138,11 +138,10 @@ func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.Secret, error
 
 		err := rows.Scan(
 			&secret.UUID,
+			&secret.Type,
+			&secret.Name,
 			&secret.LastModified,
 			&secret.Hash,
-			&secret.Name,
-			&secret.Type,
-			&secret.Data,
 			&secret.Metadata,
 		)
 		if err != nil {

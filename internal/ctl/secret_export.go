@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/etoneja/go-keeper/internal/ctl/constants"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
@@ -25,9 +24,6 @@ func exportSecret(secret *types.Secret, exportPath string) error {
 		if err := os.WriteFile(exportPath, content, 0644); err != nil {
 			return fmt.Errorf("failed to write file: %w", err)
 		}
-
-		fmt.Printf("%s File exported to: %s\n", constants.EmojiSuccess, exportPath)
-
 	default:
 		jsonData, err := json.MarshalIndent(secret, "", "  ")
 		if err != nil {
@@ -37,8 +33,6 @@ func exportSecret(secret *types.Secret, exportPath string) error {
 		if err := os.WriteFile(exportPath, jsonData, 0644); err != nil {
 			return fmt.Errorf("failed to write file: %w", err)
 		}
-
-		fmt.Printf("%s Secret exported to: %s\n", constants.EmojiSuccess, exportPath)
 	}
 
 	return nil

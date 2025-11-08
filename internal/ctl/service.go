@@ -6,19 +6,23 @@ import (
 	"sync"
 
 	"github.com/etoneja/go-keeper/internal/crypto"
+	"github.com/etoneja/go-keeper/internal/ctl/client"
+	"github.com/etoneja/go-keeper/internal/ctl/config"
 	"github.com/etoneja/go-keeper/internal/ctl/storage"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
 type VaultService struct {
-	cfg     *Config
+	cfg     *config.Config
 	crypter crypto.Crypter
 
-	storage   storage.Storager
-	storageMu sync.Mutex
+	mu sync.Mutex
+
+	storage storage.Storager
+	client  client.Clienter
 }
 
-func NewVaultService(cfg *Config) *VaultService {
+func NewVaultService(cfg *config.Config) *VaultService {
 	crypter := crypto.NewCrypto(cfg.Password)
 
 	return &VaultService{
@@ -28,8 +32,8 @@ func NewVaultService(cfg *Config) *VaultService {
 }
 
 func (s *VaultService) getStorage(ctx context.Context) (storage.Storager, error) {
-	s.storageMu.Lock()
-	defer s.storageMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.storage != nil {
 		return s.storage, nil
@@ -44,21 +48,39 @@ func (s *VaultService) getStorage(ctx context.Context) (storage.Storager, error)
 	return s.storage, nil
 }
 
-// Close cleans up resources
+func (s *VaultService) getClient(ctx context.Context) (client.Clienter, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.client != nil {
+		return s.client, nil
+	}
+
+	client := client.NewGRPCClient(s.cfg)
+
+	err := client.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.client = client
+	return s.client, nil
+}
+
 func (s *VaultService) Close() error {
-	s.storageMu.Lock()
-	defer s.storageMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.storage != nil {
 		return s.storage.Close()
 	}
+
 	return nil
 }
 
-// Initialize sets up the storage
 func (s *VaultService) Initialize(ctx context.Context) error {
-	s.storageMu.Lock()
-	defer s.storageMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if s.storage != nil {
 		return fmt.Errorf("service already initialized")
@@ -73,7 +95,6 @@ func (s *VaultService) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// Create methods with models
 func (s *VaultService) CreateSecret(ctx context.Context, secret *types.Secret) (*types.Secret, error) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
@@ -88,14 +109,18 @@ func (s *VaultService) CreateSecret(ctx context.Context, secret *types.Secret) (
 	return newsecret, nil
 }
 
-// Get methods
-func (s *VaultService) GetSecret(ctx context.Context, uuid string) (*types.Secret, error) {
+func (s *VaultService) GetSecret(ctx context.Context, secretId string) (*types.Secret, error) {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return storage.GetSecret(ctx, uuid)
+	secret, err := storage.GetSecret(ctx, secretId)
+	if err != nil {
+		return nil, err
+	}
+
+	return secret, err
 }
 
 func (s *VaultService) ListSecrets(ctx context.Context) ([]*types.Secret, error) {
@@ -104,18 +129,57 @@ func (s *VaultService) ListSecrets(ctx context.Context) ([]*types.Secret, error)
 		return nil, err
 	}
 
-	return storage.ListSecrets(ctx)
+	secrets, err := storage.ListSecrets(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return secrets, nil
 }
 
-// Delete method
-func (s *VaultService) DeleteSecret(ctx context.Context, uuid string) error {
+func (s *VaultService) DeleteSecret(ctx context.Context, secretId string) error {
 	storage, err := s.getStorage(ctx)
 	if err != nil {
 		return err
 	}
-	_, err = storage.GetSecret(ctx, uuid)
+
+	_, err = storage.GetSecret(ctx, secretId)
 	if err != nil {
 		return err
 	}
-	return storage.DeleteSecret(ctx, uuid)
+
+	err = storage.DeleteSecret(ctx, secretId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *VaultService) Register(ctx context.Context) error {
+	client, err := s.getClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Register(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *VaultService) SyncSecrets(ctx context.Context) error {
+	diff, err := s.getDiff(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.processDiff(ctx, diff)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

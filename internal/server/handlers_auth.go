@@ -22,8 +22,10 @@ func (h *AuthHandler) Register(ctx context.Context, req *proto.RegisterRequest) 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	resp := &proto.RegisterResponse{}
 	resp.SetUserId(user.ID)
+
 	return resp, nil
 }
 
@@ -36,5 +38,6 @@ func (h *AuthHandler) Login(ctx context.Context, req *proto.LoginRequest) (*prot
 	resp := &proto.LoginResponse{}
 	resp.SetToken(token)
 	resp.SetUserId(user.ID)
+
 	return resp, nil
 }

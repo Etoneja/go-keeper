@@ -2,9 +2,12 @@ package ctl
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
+
+const timeFormat = "2006-01-02 15:04:05"
 
 func displaySecrets(responses []*types.Secret) {
 	if len(responses) == 0 {
@@ -12,22 +15,22 @@ func displaySecrets(responses []*types.Secret) {
 		return
 	}
 
-	fmt.Printf("%-36s %-20s %-12s %s\n", "UUID", "Last Modified", "Type", "Name")
-	fmt.Println("-------------------------------------------------------------------------------")
+	fmt.Printf("%-36s %-12s %-12s %s\n", "UUID", "Type", "Name", "Last Modified")
+	fmt.Println(strings.Repeat("-", 82))
 	for _, resp := range responses {
-		fmt.Printf("%-36s %-20s %-12s %s\n",
+		fmt.Printf("%-36s %-12s %-12s %s\n",
 			resp.UUID,
-			resp.LastModified.Format("2006-01-02 15:04:05"),
 			resp.Type,
-			resp.Name)
+			resp.Name,
+			resp.LastModified.Local().Format(timeFormat))
 	}
 }
 
 func displaySecret(secret *types.Secret, full bool) error {
 	fmt.Printf("UUID: %s\n", secret.UUID)
-	fmt.Printf("Name: %s\n", secret.Name)
 	fmt.Printf("Type: %s\n", secret.Type)
-	fmt.Printf("Last Modified: %s\n", secret.LastModified.Format("2006-01-02 15:04:05"))
+	fmt.Printf("Name: %s\n", secret.Name)
+	fmt.Printf("Last Modified: %s\n", secret.LastModified.Local().Format(timeFormat))
 	if secret.Metadata != "" {
 		fmt.Printf("Metadata: %s\n", secret.Metadata)
 	}

@@ -15,11 +15,11 @@ func main() {
 	_ = godotenv.Load()
 
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"),
+		os.Getenv("GOKEEPER_DB_USER"),
+		os.Getenv("GOKEEPER_DB_PASSWORD"),
+		os.Getenv("GOKEEPER_DB_HOST"),
+		os.Getenv("GOKEEPER_DB_PORT"),
+		os.Getenv("GOKEEPER_DB_NAME"),
 	)
 
 	m, err := migrate.New("file://migrations", dbURL)

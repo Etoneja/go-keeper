@@ -4,9 +4,11 @@ import (
 	"context"
 	"log"
 	"net"
+	"time"
 
 	"github.com/etoneja/go-keeper/internal/proto"
 	"github.com/etoneja/go-keeper/internal/server/repository"
+	"github.com/etoneja/go-keeper/internal/server/token"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 )
@@ -16,25 +18,28 @@ type App struct {
 	db         *pgxpool.Pool
 }
 
-func NewApp(cfg *Config) (*App, error) {
-	// Database connection
+func NewApp() (*App, error) {
+	cfg, err := LoadCfg()
+	if err != nil {
+		return nil, err
+	}
+
 	db, err := pgxpool.New(context.Background(), cfg.DBURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Repositories
 	repos := repository.NewRepositories()
+	jwtManager := token.NewJWTManager(cfg.JWTSecret, time.Hour)
+	svc := NewService(db, jwtManager, repos)
 
-	// Service
-	svc := NewService(db, cfg, repos)
-
-	// gRPC server with auth interceptor
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(AuthInterceptor(svc)),
+		grpc.ChainUnaryInterceptor(
+			LoggingInterceptor(),
+			AuthInterceptor(svc),
+		),
 	)
 
-	// Register services
 	proto.RegisterAuthServiceServer(grpcServer, NewAuthHandler(svc))
 	proto.RegisterSecretServiceServer(grpcServer, NewSecretHandler(svc))
 

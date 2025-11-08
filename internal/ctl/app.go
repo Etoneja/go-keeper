@@ -3,6 +3,7 @@ package ctl
 import (
 	"context"
 
+	"github.com/etoneja/go-keeper/internal/ctl/config"
 	"github.com/spf13/cobra"
 )
 
@@ -13,12 +14,12 @@ const (
 )
 
 type App struct {
-	cfg     *Config
+	cfg     *config.Config
 	service *VaultService
 }
 
 func NewApp() (*App, error) {
-	cfg, err := LoadCfg()
+	cfg, err := config.LoadCfg()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,6 @@ func addCommands(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(registerCmd)
-	rootCmd.AddCommand(loginCmd)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(deleteCmd)

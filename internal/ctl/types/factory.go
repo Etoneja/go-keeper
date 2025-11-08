@@ -34,14 +34,13 @@ func NewSecretModel(base BaseModel, data SecretData, crypter crypto.Crypter) (*S
 
 	secret := &Secret{
 		UUID:         uuid.New().String(),
-		LastModified: time.Now(),
-		Name:         base.Name,
 		Type:         base.Type,
+		Name:         base.Name,
+		LastModified: time.Now().UTC().Truncate(time.Microsecond),
 		Metadata:     base.Metadata,
 	}
 
-	err := secret.SetData(data, crypter)
-	if err != nil {
+	if err := secret.SetData(data, crypter); err != nil {
 		return nil, err
 	}
 	return secret, nil
@@ -49,11 +48,11 @@ func NewSecretModel(base BaseModel, data SecretData, crypter crypto.Crypter) (*S
 }
 
 func validateBaseModel(base BaseModel, data SecretData) error {
-	if base.Name == "" {
-		return fmt.Errorf("name is required")
-	}
 	if base.Type == "" {
 		return fmt.Errorf("type is required")
+	}
+	if base.Name == "" {
+		return fmt.Errorf("name is required")
 	}
 	if data == nil {
 		return fmt.Errorf("data is required")

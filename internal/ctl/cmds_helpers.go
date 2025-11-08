@@ -1,9 +1,15 @@
 package ctl
 
-import "github.com/spf13/cobra"
+import (
+	"fmt"
+	"log"
+
+	"github.com/etoneja/go-keeper/internal/ctl/constants"
+	"github.com/etoneja/go-keeper/internal/ctl/errs"
+	"github.com/spf13/cobra"
+)
 
 func init() {
-	// Add command flags
 	addPasswordCmd.Flags().String("name", "", "Secret name (required)")
 	addPasswordCmd.Flags().String("username", "", "Username (required)")
 	addPasswordCmd.Flags().String("password", "", "Password (required)")
@@ -37,11 +43,9 @@ func init() {
 	addCardCmd.MarkFlagRequired("expiry")
 	addCardCmd.MarkFlagRequired("cvv")
 
-	// Get command flags
 	getCmd.Flags().Bool("full", false, "Show all data including passwords/CVV")
 	getCmd.Flags().String("export", "", "Export to file path")
 
-	// Add subcommands to add command
 	addCmd.AddCommand(addPasswordCmd)
 	addCmd.AddCommand(addTextCmd)
 	addCmd.AddCommand(addBinaryCmd)
@@ -52,13 +56,27 @@ func getAppFromCommand(cmd *cobra.Command) *App {
 	rootCmd := cmd.Root()
 	app, ok := rootCmd.Context().Value(appContextKey).(*App)
 	if !ok {
-		panic("app not found in command context")
+		log.Fatal("app not found in command context")
 	}
 	return app
 }
 
-// Helper function to safely get string flags
 func getStringFlag(cmd *cobra.Command, name string) string {
 	value, _ := cmd.Flags().GetString(name)
 	return value
+}
+
+func withErrorHandling(fn func(cmd *cobra.Command, args []string) error) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		err := fn(cmd, args)
+		short := cmd.Short
+		if err != nil {
+			emoji := constants.EmojiError
+			if errs.IsNotFound(err) {
+				emoji = constants.EmojiWarning
+			}
+			fmt.Printf("%s  Failed to %s: %v\n", emoji, short, err)
+			return
+		}
+	}
 }

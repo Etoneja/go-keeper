@@ -24,8 +24,9 @@ func LoadCfg() (*Config, error) {
 		return nil, fmt.Errorf("GOKEEPER_JWT_SECRET environment variable is required")
 	}
 
-	return &Config{
+	cfg := &Config{
 		DBURL:     dbURL,
 		JWTSecret: jwtSecret,
-	}, nil
+	}
+	return cfg, nil
 }

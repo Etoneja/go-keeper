@@ -7,11 +7,18 @@ import (
 	"time"
 
 	"github.com/etoneja/go-keeper/internal/ctl/client"
+	"github.com/etoneja/go-keeper/internal/ctl/config"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	cli := client.NewGRPCClient("localhost:50051")
+	_ = godotenv.Load()
+	cfg, err := config.LoadCfg()
+	if err != nil {
+		panic(err)
+	}
+	cli := client.NewGRPCClient(cfg)
 	defer cli.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -24,11 +31,11 @@ func main() {
 
 	// Register & Login
 	fmt.Println("=== Auth ===")
-	if _, err := cli.Register(ctx, "testuser", "testpass"); err != nil {
+	if _, err := cli.Register(ctx); err != nil {
 		log.Printf("Register failed: %v", err)
 	}
 
-	if err := cli.Login(ctx, "testuser", "testpass"); err != nil {
+	if err := cli.Login(ctx); err != nil {
 		log.Fatal("Login failed:", err)
 	}
 	fmt.Println("Logged in successfully")
@@ -38,7 +45,7 @@ func main() {
 
 	// Set secret
 	secret := &types.RemoteSecret{
-		ID:           "asdf",
+		UUID:         "asdf",
 		LastModified: time.Now(),
 		Hash:         "sdf",
 		Data:         []byte("my data"),
@@ -56,6 +63,6 @@ func main() {
 
 	fmt.Printf("Found %d secrets:\n", len(secrets))
 	for i, secret := range secrets {
-		fmt.Printf("%d. %s (hash: %s)\n", i+1, secret.ID, secret.Hash)
+		fmt.Printf("%d. %s (hash: %s)\n", i+1, secret.GetUUID(), secret.GetHash())
 	}
 }

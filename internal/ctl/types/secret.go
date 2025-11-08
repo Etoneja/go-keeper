@@ -6,42 +6,38 @@ import (
 	"time"
 
 	"github.com/etoneja/go-keeper/internal/crypto"
-	"github.com/etoneja/go-keeper/internal/ctl/constants"
 )
 
 // Domain model
 type Secret struct {
 	UUID         string    `json:"uuid"`
+	Type         string    `json:"type"`
+	Name         string    `json:"name"`
 	LastModified time.Time `json:"last_modified"`
 	Hash         string    `json:"hash"`
-	Name         string    `json:"name"`
-	Type         string    `json:"type"`
 	Data         []byte    `json:"data"`
 	Metadata     string    `json:"metadata,omitempty"`
 }
 
+func (s *Secret) GetUUID() string {
+	return s.UUID
+}
+
+func (s *Secret) GetLastModified() time.Time {
+	return s.LastModified
+}
+
+func (s *Secret) GetHash() string {
+	return s.Hash
+}
+
+func (s *Secret) GetData() []byte {
+	return s.Data
+}
+
 // ParseData parses secret data based on type
 func (s *Secret) ParseData() (SecretData, error) {
-	switch s.Type {
-	case constants.TypePassword:
-		var data LoginData
-		err := json.Unmarshal(s.Data, &data)
-		return data, err
-	case constants.TypeText:
-		var data TextData
-		err := json.Unmarshal(s.Data, &data)
-		return data, err
-	case constants.TypeBinary:
-		var data FileData
-		err := json.Unmarshal(s.Data, &data)
-		return data, err
-	case constants.TypeCard:
-		var data CardData
-		err := json.Unmarshal(s.Data, &data)
-		return data, err
-	default:
-		return nil, fmt.Errorf("unknown secret type: %s", s.Type)
-	}
+	return ParseSecretData(s.Type, s.Data)
 }
 
 // SetData serializes data to JSON based on type
@@ -50,7 +46,9 @@ func (s *Secret) SetData(data SecretData, crypter crypto.Crypter) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal data: %w", err)
 	}
-	hashData := fmt.Sprintf("%s%s%s%s", s.Name, s.Type, string(jsonData), s.Metadata)
+
+	// TODO: can be more efficient?
+	hashData := fmt.Sprintf("%s%s", string(jsonData), s.Metadata)
 	hash := crypter.GenerateHash([]byte(hashData))
 
 	s.Data = jsonData
