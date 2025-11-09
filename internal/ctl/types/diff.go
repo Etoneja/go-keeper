@@ -1,6 +1,6 @@
 package types
 
-type CheckPair struct {
+type SecretCheckPair struct {
 	Local  *LocalSecret
 	Remote *RemoteSecret
 }
@@ -8,5 +8,10 @@ type CheckPair struct {
 type SecretsDiff struct {
 	LocalOnly  []*LocalSecret
 	RemoteOnly []*RemoteSecret
-	Both       []*CheckPair
+	Both       []*SecretCheckPair
+}
+
+func (p *SecretCheckPair) IsIdentical() bool {
+	return p.Local.Hash == p.Remote.Hash &&
+		p.Local.LastModified.Equal(p.Remote.LastModified)
 }

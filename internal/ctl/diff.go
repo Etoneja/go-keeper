@@ -29,7 +29,7 @@ func diffSecrets(local []*types.LocalSecret, remote []*types.RemoteSecret) *type
 
 	for id, localSecret := range localMap {
 		if remoteSecret, exists := remoteMap[id]; exists {
-			diff.Both = append(diff.Both, &types.CheckPair{
+			diff.Both = append(diff.Both, &types.SecretCheckPair{
 				Local:  localSecret,
 				Remote: remoteSecret,
 			})

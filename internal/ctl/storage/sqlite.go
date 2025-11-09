@@ -42,6 +42,7 @@ func (s *SQLiteStorage) dump() error {
 		return fmt.Errorf("failed to encrypt db: %w", err)
 	}
 
+	// TODO: Write to temp file and only then replace original
 	if err := os.WriteFile(s.path, encryptedData, 0600); err != nil {
 		return fmt.Errorf("failed to write db file: %w", err)
 	}

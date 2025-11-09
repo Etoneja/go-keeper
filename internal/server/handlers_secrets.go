@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 
 	"github.com/etoneja/go-keeper/internal/proto"
 	"github.com/etoneja/go-keeper/internal/server/types"
@@ -37,7 +38,8 @@ func (h *SecretHandler) SetSecret(ctx context.Context, req *proto.SetSecretReque
 
 	err = h.service.SetSecret(ctx, secret)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		log.Printf("SetSecret failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to set secret")
 	}
 
 	resp := &proto.SetSecretResponse{}
@@ -54,7 +56,9 @@ func (h *SecretHandler) GetSecret(ctx context.Context, req *proto.GetSecretReque
 
 	secret, err := h.service.GetSecret(ctx, userID, req.GetSecretId())
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "secret not found")
+		// TODO: return NotFound if not found
+		log.Printf("GetSecret failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to get secret")
 	}
 
 	respSecret := &proto.Secret{}
@@ -78,7 +82,9 @@ func (h *SecretHandler) DeleteSecret(ctx context.Context, req *proto.DeleteSecre
 
 	err = h.service.DeleteSecret(ctx, userID, req.GetSecretId())
 	if err != nil {
-		return nil, status.Error(codes.NotFound, "secret not found")
+		// TODO: return NotFound if not found
+		log.Printf("DeleteSecret failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to delete secret")
 	}
 
 	resp := &proto.DeleteSecretResponse{}
@@ -95,7 +101,8 @@ func (h *SecretHandler) ListSecrets(ctx context.Context, req *proto.ListSecretsR
 
 	secrets, err := h.service.ListSecrets(ctx, userID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		log.Printf("ListSecrets failed: %v", err)
+		return nil, status.Error(codes.Internal, "failed to retrieve secrets")
 	}
 
 	respSecrets := make([]*proto.Secret, len(secrets))

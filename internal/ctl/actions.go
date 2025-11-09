@@ -2,12 +2,19 @@ package ctl
 
 type ActionType string
 
+func (a ActionType) String() string {
+	return string(a)
+}
+
 const (
 	ActionDeleteLocal  ActionType = "delete_local"
 	ActionCreateRemote ActionType = "create_remote"
 
 	ActionCreateLocal  ActionType = "create_local"
 	ActionDeleteRemote ActionType = "delete_remote"
+
+	ActionReplaceLocal  ActionType = "replace_local"
+	ActionReplaceRemote ActionType = "replace_remote"
 
 	ActionSkip ActionType = "ignore"
 )
@@ -24,6 +31,8 @@ var RemoteOnlyActions = []ActionType{
 	ActionSkip,
 }
 
-func (a ActionType) String() string {
-	return string(a)
+var ConflictCheckPairActions = []ActionType{
+	ActionReplaceLocal,
+	ActionReplaceRemote,
+	ActionSkip,
 }

@@ -86,7 +86,7 @@ func withErrorHandling(fn func(cmd *cobra.Command, args []string) error) func(cm
 			if errs.IsNotFound(err) {
 				emoji = constants.EmojiWarning
 			}
-			fmt.Printf("%s  Failed to %s: %v\n", emoji, short, err)
+			fmt.Printf("%s Failed to %s: %v\n", emoji, short, err)
 			return
 		}
 	}

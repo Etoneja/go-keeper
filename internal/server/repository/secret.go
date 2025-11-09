@@ -21,11 +21,10 @@ func (r *SecretRepository) SetSecret(ctx context.Context, q Querier, secret *typ
 	query := `
 		INSERT INTO secrets (id, user_id, data, hash, last_modified)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (id) DO UPDATE SET
+		ON CONFLICT (id, user_id) DO UPDATE SET
 			data = $3,
 			hash = $4, 
 			last_modified = $5
-		WHERE secrets.user_id = $2
 	`
 
 	_, err := q.Exec(ctx, query,

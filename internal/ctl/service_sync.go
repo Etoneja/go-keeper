@@ -50,15 +50,10 @@ func (s *VaultService) processDiff(ctx context.Context, diff *types.SecretsDiff)
 		}
 	}
 
-	// proceed both
 	for _, pair := range diff.Both {
-		if pair.Local.Hash != pair.Remote.Hash {
-			fmt.Printf("Secret %s has different hash: local=%s vs remote=%s\n",
-				pair.Local.UUID, pair.Local.Hash, pair.Remote.Hash)
-		}
-		fmt.Printf("%s - %s\n", pair.Local.LastModified, pair.Remote.LastModified)
-		if pair.Local.LastModified.After(pair.Remote.LastModified) {
-			fmt.Printf("Secret %s is newer locally\n", pair.Local.UUID)
+		err := s.syncSecretCheckPair(ctx, pair)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -158,8 +153,40 @@ func (s *VaultService) deleteRemoteSecret(ctx context.Context, secretID string) 
 	return nil
 }
 
+func (s *VaultService) replaceLocalSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Replacing remote secret '%s'\n", secretID)
+
+	err := s.deleteLocalSecret(ctx, secretID)
+	if err != nil {
+		return err
+	}
+
+	err = s.createLocalSecret(ctx, secretID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *VaultService) replaceRemoteSecret(ctx context.Context, secretID string) error {
+	fmt.Printf("Replacing remote secret '%s'\n", secretID)
+
+	err := s.deleteRemoteSecret(ctx, secretID)
+	if err != nil {
+		return err
+	}
+
+	err = s.createRemoteSecret(ctx, secretID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *VaultService) syncLocalSecret(ctx context.Context, localSecret *types.LocalSecret) error {
-	action, err := PromptForLocalOnlyAction(localSecret.UUID)
+	action, err := PromptForLocalOnlyAction(localSecret)
 	if err != nil {
 		return err
 	}
@@ -183,7 +210,7 @@ func (s *VaultService) syncLocalSecret(ctx context.Context, localSecret *types.L
 }
 
 func (s *VaultService) syncRemoteSecret(ctx context.Context, remoteSecret *types.RemoteSecret) error {
-	action, err := PromptForRemoteOnlyAction(remoteSecret.UUID)
+	action, err := PromptForRemoteOnlyAction(remoteSecret)
 	if err != nil {
 		return err
 	}
@@ -201,6 +228,36 @@ func (s *VaultService) syncRemoteSecret(ctx context.Context, remoteSecret *types
 		}
 	case ActionSkip:
 		fmt.Printf("Ignoring secret '%s'\n", remoteSecret.UUID)
+	}
+
+	return nil
+}
+
+func (s *VaultService) syncSecretCheckPair(ctx context.Context, checkPair *types.SecretCheckPair) error {
+	if checkPair.IsIdentical() {
+		return nil
+	}
+
+	// TODO: Add option to show diff
+
+	action, err := PromptForConflictCheckPairAction(checkPair)
+	if err != nil {
+		return err
+	}
+
+	switch action {
+	case ActionReplaceLocal:
+		err := s.replaceLocalSecret(ctx, checkPair.Local.UUID)
+		if err != nil {
+			return err
+		}
+	case ActionReplaceRemote:
+		err := s.replaceRemoteSecret(ctx, checkPair.Remote.UUID)
+		if err != nil {
+			return err
+		}
+	case ActionSkip:
+		fmt.Printf("Ignoring secret '%s'\n", checkPair.Local.UUID)
 	}
 
 	return nil
