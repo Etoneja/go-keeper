@@ -2,8 +2,10 @@ package ctl
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
+	"github.com/etoneja/go-keeper/internal/buildinfo"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 )
 
@@ -76,4 +78,22 @@ func displaySecret(secret *types.LocalSecret, full bool) error {
 	}
 
 	return nil
+}
+
+func displayVersion() {
+	commitShort := buildinfo.Commit
+	if len(commitShort) > 12 {
+		commitShort = commitShort[:12]
+	}
+
+	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+
+	fmt.Println("GoKeeper - Secret Manager")
+	fmt.Println("┌──────────────────┬─────────────────────────────────┐")
+	fmt.Printf("│ Version          │ %-31s │\n", buildinfo.Version)
+	fmt.Printf("│ Build Date       │ %-31s │\n", buildinfo.BuildTime)
+	fmt.Printf("│ Git Commit       │ %-31s │\n", commitShort)
+	fmt.Printf("│ Go Version       │ %-31s │\n", runtime.Version())
+	fmt.Printf("│ Platform         │ %-31s │\n", platform)
+	fmt.Println("└──────────────────┴─────────────────────────────────┘")
 }

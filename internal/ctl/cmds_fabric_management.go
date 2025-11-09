@@ -2,15 +2,12 @@ package ctl
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 func createVersionHandler() func(cmd *cobra.Command, args []string) {
-	// TODO: use constant or build flags
 	return func(cmd *cobra.Command, args []string) {
-		fmt.Println("GoKeeper CLI v0.1.0")
+		displayVersion()
 	}
 }
 

@@ -36,7 +36,7 @@ func (a *App) Run() error {
 
 func (a *App) setupCommands() {
 	rootCmd := &cobra.Command{
-		Use:              "vault",
+		Use:              "keeperctl",
 		Short:            "Zero-Knowledge secret manager",
 		PersistentPreRun: a.initializeService,
 	}
