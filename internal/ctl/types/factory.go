@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/constants"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 	"github.com/google/uuid"
 )
 

@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/client"
 	"github.com/etoneja/go-keeper/internal/ctl/config"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/types"
 	"github.com/joho/godotenv"
 )

@@ -2,7 +2,8 @@ package storage
 
 import (
 	"context"
-	"github.com/etoneja/go-keeper/internal/crypto"
+
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 )
 
 func InitializeStorage(ctx context.Context, cryptor crypto.Cryptor, path string) error {

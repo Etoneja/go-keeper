@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 )
 
 func initializeSQLiteStorage(ctx context.Context, cryptor crypto.Cryptor, dbPath string) error {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 )
 
 type BaseSecret struct {

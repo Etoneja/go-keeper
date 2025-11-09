@@ -5,9 +5,9 @@ import (
 	"log"
 	"sync"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/client"
 	"github.com/etoneja/go-keeper/internal/ctl/config"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 	"github.com/etoneja/go-keeper/internal/ctl/storage"
 )
 

@@ -3,7 +3,7 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/etoneja/go-keeper/internal/crypto"
+	"github.com/etoneja/go-keeper/internal/ctl/crypto"
 )
 
 func ConvertLocalSecretToRemoteSecret(cryptor crypto.Cryptor, localSecret *LocalSecret) (*RemoteSecret, error) {
