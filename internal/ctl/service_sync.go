@@ -84,7 +84,7 @@ func (s *VaultService) createRemoteSecret(ctx context.Context, secretID string) 
 		return err
 	}
 
-	localSecret, err := storage.GetSecret(ctx, secretID)
+	localSecret, err := storage.GetSecret(ctx, secretID, true)
 	if err != nil {
 		return err
 	}

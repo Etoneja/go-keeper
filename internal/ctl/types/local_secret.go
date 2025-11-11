@@ -15,13 +15,13 @@ type BaseSecret struct {
 }
 
 type LocalSecret struct {
-	UUID         string    `json:"uuid"`
-	Type         string    `json:"type"`
-	Name         string    `json:"name"`
-	LastModified time.Time `json:"last_modified"`
-	Hash         string    `json:"hash"`
-	Data         []byte    `json:"data"`
-	Metadata     string    `json:"metadata,omitempty"`
+	UUID         string
+	Type         string
+	Name         string
+	LastModified time.Time
+	Hash         string
+	Data         []byte
+	Metadata     string
 }
 
 func (s *LocalSecret) ParseData() (SecretData, error) {

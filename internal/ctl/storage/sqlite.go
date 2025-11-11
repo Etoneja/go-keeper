@@ -107,17 +107,19 @@ func (s *SQLiteStorage) CreateSecret(ctx context.Context, secret *types.LocalSec
 	return secret, nil
 }
 
-func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.LocalSecret, error) {
+func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string, loadData bool) (*types.LocalSecret, error) {
 	query := `
-		SELECT uuid, type, name, last_modified, hash, metadata, data
+		SELECT uuid, type, name, last_modified, hash, metadata,
+			case when ? then data else null end as data
 		FROM secrets
 		WHERE uuid = ?
 	`
 
-	row := s.db.QueryRowContext(ctx, query, uuid)
+	row := s.db.QueryRowContext(ctx, query, loadData, uuid)
 
 	secret := &types.LocalSecret{}
 
+	var data []byte
 	err := row.Scan(
 		&secret.UUID,
 		&secret.Type,
@@ -125,7 +127,7 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Loca
 		&secret.LastModified,
 		&secret.Hash,
 		&secret.Metadata,
-		&secret.Data,
+		&data,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -133,7 +135,9 @@ func (s *SQLiteStorage) GetSecret(ctx context.Context, uuid string) (*types.Loca
 		}
 		return nil, err
 	}
-
+	if loadData {
+		secret.Data = data
+	}
 	return secret, nil
 }
 

@@ -26,7 +26,7 @@ func (s *VaultService) GetLocalSecret(ctx context.Context, secretID string) (*ty
 		return nil, err
 	}
 
-	secret, err := storage.GetSecret(ctx, secretID)
+	secret, err := storage.GetSecret(ctx, secretID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *VaultService) DeleteLocalSecret(ctx context.Context, secretID string) e
 		return err
 	}
 
-	_, err = storage.GetSecret(ctx, secretID)
+	_, err = storage.GetSecret(ctx, secretID, false)
 	if err != nil {
 		return err
 	}
