@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/etoneja/go-keeper/internal/server/repository"
+	"github.com/etoneja/go-keeper/internal/server/stypes"
 	"github.com/etoneja/go-keeper/internal/server/token"
-	"github.com/etoneja/go-keeper/internal/server/types"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,20 +22,25 @@ type Service struct {
 	db           *pgxpool.Pool
 	tokenManager token.TokenManager
 	repos        *repository.Repositories
+	txManager    repository.TxManager
 }
 
-func NewService(db *pgxpool.Pool, tokenManager token.TokenManager, repos *repository.Repositories) *Service {
+func NewService(db *pgxpool.Pool, tokenManager token.TokenManager, txManager repository.TxManager, repos *repository.Repositories) *Service {
+	if txManager == nil {
+		txManager = &repository.DefaultTxManager{Repos: repos, Db: db}
+	}
 	return &Service{
 		db:           db,
 		tokenManager: tokenManager,
 		repos:        repos,
+		txManager:    txManager,
 	}
 }
 
-func (s *Service) Register(ctx context.Context, login, password string) (*types.User, error) {
-	var user *types.User
+func (s *Service) Register(ctx context.Context, login, password string) (*stypes.User, error) {
+	var user *stypes.User
 
-	err := s.repos.WithTx(ctx, s.db, func(q repository.Querier) error {
+	err := s.txManager.WithTx(ctx, func(q repository.Querier) error {
 		existing, _ := s.repos.UserRepo.GetUserByLogin(ctx, q, login)
 		if existing != nil {
 			return ErrUserAlreadyExists
@@ -62,7 +67,7 @@ func (s *Service) Register(ctx context.Context, login, password string) (*types.
 	return user, nil
 }
 
-func (s *Service) Login(ctx context.Context, login, password string) (string, *types.User, error) {
+func (s *Service) Login(ctx context.Context, login, password string) (string, *stypes.User, error) {
 	user, err := s.repos.UserRepo.GetUserByLogin(ctx, s.db, login)
 	if err != nil {
 		return "", nil, ErrUserNotFound
@@ -81,7 +86,7 @@ func (s *Service) Login(ctx context.Context, login, password string) (string, *t
 	return token, user, nil
 }
 
-func (s *Service) SetSecret(ctx context.Context, secret *types.Secret) error {
+func (s *Service) SetSecret(ctx context.Context, secret *stypes.Secret) error {
 	if len(secret.Data) > maxSecretSize {
 		return ErrSecretTooLarge
 	}
@@ -89,7 +94,7 @@ func (s *Service) SetSecret(ctx context.Context, secret *types.Secret) error {
 	return s.repos.SecretRepo.SetSecret(ctx, s.db, secret)
 }
 
-func (s *Service) GetSecret(ctx context.Context, userID, secretID string) (*types.Secret, error) {
+func (s *Service) GetSecret(ctx context.Context, userID, secretID string) (*stypes.Secret, error) {
 	// TODO: check ownership in service
 	return s.repos.SecretRepo.GetSecret(ctx, s.db, userID, secretID)
 }
@@ -99,6 +104,6 @@ func (s *Service) DeleteSecret(ctx context.Context, userID, secretID string) err
 	return s.repos.SecretRepo.DeleteSecret(ctx, s.db, userID, secretID)
 }
 
-func (s *Service) ListSecrets(ctx context.Context, userID string) ([]*types.Secret, error) {
+func (s *Service) ListSecrets(ctx context.Context, userID string) ([]*stypes.Secret, error) {
 	return s.repos.SecretRepo.ListSecrets(ctx, s.db, userID)
 }

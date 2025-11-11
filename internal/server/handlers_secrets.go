@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/etoneja/go-keeper/internal/proto"
-	"github.com/etoneja/go-keeper/internal/server/types"
+	"github.com/etoneja/go-keeper/internal/server/stypes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -13,10 +13,10 @@ import (
 
 type SecretHandler struct {
 	proto.UnimplementedSecretServiceServer
-	service *Service
+	service Servicer
 }
 
-func NewSecretHandler(service *Service) *SecretHandler {
+func NewSecretHandler(service Servicer) *SecretHandler {
 	return &SecretHandler{service: service}
 }
 
@@ -28,7 +28,7 @@ func (h *SecretHandler) SetSecret(ctx context.Context, req *proto.SetSecretReque
 
 	reqSecret := req.GetSecret()
 
-	secret := &types.Secret{
+	secret := &stypes.Secret{
 		ID:           reqSecret.GetId(),
 		UserID:       userID,
 		Data:         reqSecret.GetData(),

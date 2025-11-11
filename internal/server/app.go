@@ -31,7 +31,7 @@ func NewApp() (*App, error) {
 
 	repos := repository.NewRepositories()
 	jwtManager := token.NewJWTManager(cfg.JWTSecret, time.Hour)
-	svc := NewService(db, jwtManager, repos)
+	svc := NewService(db, jwtManager, nil, repos)
 
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(

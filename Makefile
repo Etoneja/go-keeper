@@ -24,6 +24,11 @@ migrate-version:
 genproto:
 	protoc --go_out=. --go-grpc_out=. internal/proto/api.proto --go_opt=default_api_level=API_OPAQUE
 
+genmocks:
+	mockgen -source=internal/server/token/interfaces.go -destination=internal/server/token/mocks.go -package=token
+	mockgen -source=internal/server/repository/interfaces.go -destination=internal/server/repository/mocks.go -package=repository
+	mockgen -source=internal/server/interfaces.go -destination=internal/server/mocks.go -package=server
+
 test:
 	@go test -v ./...
 

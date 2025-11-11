@@ -11,10 +11,10 @@ import (
 
 type AuthHandler struct {
 	proto.UnimplementedAuthServiceServer
-	service *Service
+	service Servicer
 }
 
-func NewAuthHandler(service *Service) *AuthHandler {
+func NewAuthHandler(service Servicer) *AuthHandler {
 	return &AuthHandler{service: service}
 }
 

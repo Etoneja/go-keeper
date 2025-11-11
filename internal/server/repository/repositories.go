@@ -8,8 +8,8 @@ import (
 )
 
 type Repositories struct {
-	UserRepo   *UserRepository
-	SecretRepo *SecretRepository
+	UserRepo   UserRepositorier
+	SecretRepo SecretRepositorier
 }
 
 func NewRepositories() *Repositories {

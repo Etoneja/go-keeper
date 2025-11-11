@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/etoneja/go-keeper/internal/server/types"
+	"github.com/etoneja/go-keeper/internal/server/stypes"
 )
 
 var (
@@ -17,7 +17,7 @@ func NewSecretRepository() *SecretRepository {
 	return &SecretRepository{}
 }
 
-func (r *SecretRepository) SetSecret(ctx context.Context, q Querier, secret *types.Secret) error {
+func (r *SecretRepository) SetSecret(ctx context.Context, q Querier, secret *stypes.Secret) error {
 	query := `
 		INSERT INTO secrets (id, user_id, data, hash, last_modified)
 		VALUES ($1, $2, $3, $4, $5)
@@ -38,14 +38,14 @@ func (r *SecretRepository) SetSecret(ctx context.Context, q Querier, secret *typ
 	return err
 }
 
-func (r *SecretRepository) GetSecret(ctx context.Context, q Querier, userID, secretID string) (*types.Secret, error) {
+func (r *SecretRepository) GetSecret(ctx context.Context, q Querier, userID, secretID string) (*stypes.Secret, error) {
 	query := `
 		SELECT id, user_id, data, hash, last_modified 
 		FROM secrets 
 		WHERE user_id = $1 AND id = $2
 	`
 
-	var secret types.Secret
+	var secret stypes.Secret
 	err := q.QueryRow(ctx, query, userID, secretID).Scan(
 		&secret.ID,
 		&secret.UserID,
@@ -72,7 +72,6 @@ func (r *SecretRepository) DeleteSecret(ctx context.Context, q Querier, userID, 
 		return err
 	}
 
-	// Check if any row was affected
 	if result.RowsAffected() == 0 {
 		return ErrSecretNotFound
 	}
@@ -80,7 +79,7 @@ func (r *SecretRepository) DeleteSecret(ctx context.Context, q Querier, userID, 
 	return nil
 }
 
-func (r *SecretRepository) ListSecrets(ctx context.Context, q Querier, userID string) ([]*types.Secret, error) {
+func (r *SecretRepository) ListSecrets(ctx context.Context, q Querier, userID string) ([]*stypes.Secret, error) {
 	query := `
 		SELECT id, user_id, hash, last_modified
 		FROM secrets 
@@ -94,9 +93,9 @@ func (r *SecretRepository) ListSecrets(ctx context.Context, q Querier, userID st
 	}
 	defer rows.Close()
 
-	var secrets []*types.Secret
+	var secrets []*stypes.Secret
 	for rows.Next() {
-		var secret types.Secret
+		var secret stypes.Secret
 		err := rows.Scan(
 			&secret.ID,
 			&secret.UserID,

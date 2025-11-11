@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/etoneja/go-keeper/internal/server/types"
+	"github.com/etoneja/go-keeper/internal/server/stypes"
 )
 
 var (
@@ -18,14 +18,14 @@ func NewUserRepository() *UserRepository {
 	return &UserRepository{}
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, q Querier, login, passwordHash string) (*types.User, error) {
+func (r *UserRepository) CreateUser(ctx context.Context, q Querier, login, passwordHash string) (*stypes.User, error) {
 	query := `
 		INSERT INTO users (login, password_hash) 
 		VALUES ($1, $2) 
 		RETURNING id, login, password_hash, created_at
 	`
 
-	var user types.User
+	var user stypes.User
 	err := q.QueryRow(ctx, query, login, passwordHash).Scan(
 		&user.ID,
 		&user.Login,
@@ -40,14 +40,14 @@ func (r *UserRepository) CreateUser(ctx context.Context, q Querier, login, passw
 	return &user, nil
 }
 
-func (r *UserRepository) GetUserByLogin(ctx context.Context, q Querier, login string) (*types.User, error) {
+func (r *UserRepository) GetUserByLogin(ctx context.Context, q Querier, login string) (*stypes.User, error) {
 	query := `
 		SELECT id, login, password_hash, created_at
 		FROM users
 		WHERE login = $1
 	`
 
-	var user types.User
+	var user stypes.User
 	err := q.QueryRow(ctx, query, login).Scan(
 		&user.ID,
 		&user.Login,
@@ -62,14 +62,14 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, q Querier, login st
 	return &user, nil
 }
 
-func (r *UserRepository) GetUserByID(ctx context.Context, q Querier, userID string) (*types.User, error) {
+func (r *UserRepository) GetUserByID(ctx context.Context, q Querier, userID string) (*stypes.User, error) {
 	query := `
 		SELECT id, login, password_hash, created_at
 		FROM users
 		WHERE id = $1
 	`
 
-	var user types.User
+	var user stypes.User
 	err := q.QueryRow(ctx, query, userID).Scan(
 		&user.ID,
 		&user.Login,
