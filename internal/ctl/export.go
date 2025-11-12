@@ -15,6 +15,8 @@ func exportSecret(secret *types.LocalSecret, exportPath string) error {
 		return err
 	}
 
+	// TODO: unify file write
+	// TODO: warn if file exists
 	switch data := data.(type) {
 	case types.FileData:
 		content, err := base64.StdEncoding.DecodeString(data.Content)

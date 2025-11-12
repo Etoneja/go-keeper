@@ -13,4 +13,5 @@ CREATE TABLE IF NOT EXISTS secrets (
     data BYTEA NOT NULL
 );
 
+ALTER TABLE secrets ADD CONSTRAINT secrets_id_user_id_key UNIQUE (id, user_id);
 CREATE INDEX IF NOT EXISTS idx_secrets_user_id ON secrets(user_id);

@@ -94,6 +94,8 @@ func createSecretGetCommand() func(cmd *cobra.Command, args []string) error {
 
 		app := getAppFromCommand(cmd)
 
+		// TODO: if not uuid like, try find by name
+
 		secret, err := app.service.GetLocalSecret(context.Background(), uuid)
 		if err != nil {
 			return err
@@ -121,6 +123,8 @@ func createSecretDeleteCommand() func(cmd *cobra.Command, args []string) error {
 		uuid := args[0]
 
 		app := getAppFromCommand(cmd)
+
+		// TODO: if not uuid like, try find by name
 
 		err := app.service.DeleteLocalSecret(context.Background(), uuid)
 		if err != nil {

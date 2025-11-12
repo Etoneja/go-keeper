@@ -32,6 +32,9 @@ genmocks:
 test:
 	@go test -v ./...
 
+test-integration:
+	@go test -tags=integration ./internal/server/repository/ -v
+
 fmt:
 	@go fmt ./...
 
