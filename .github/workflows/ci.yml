@@ -2,9 +2,7 @@ name: Go CI
 
 on:
   push:
-    branches: [ main, master ]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
   test:
@@ -18,32 +16,15 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.24.3'
+        go-version: '1.25.4'
 
     - name: Download dependencies
-      run: go mod download
+      run: make deps
 
     - name: Run tests
-      run: go test -v ./...
+      run: make test
 
     - name: Run linter
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v8
       with:
         version: latest
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: test
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.3'
-
-    - name: Build
-      run: go build -v ./cmd/my-app/
