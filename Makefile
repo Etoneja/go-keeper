@@ -1,4 +1,4 @@
-.PHONY: test build clean lint
+.PHONY: test build clean lint deps
 
 BIN_DIR = bin
 
@@ -38,13 +38,17 @@ test-integration:
 fmt:
 	@go fmt ./...
 
+deps:
+	go mod download
+	go mod verify
+
 build-ctl:
 	@mkdir -p bin/
-	go build -ldflags="$(get_ldflags)" -o bin/keeperctl ./cmd/ctl
+	@go build -ldflags="$(get_ldflags)" -o bin/keeperctl ./cmd/ctl
 
 build-server:
 	@mkdir -p bin
-	go build -ldflags="$(get_ldflags)" -o bin/keepersrv ./cmd/server
+	@go build -ldflags="$(get_ldflags)" -o bin/keepersrv ./cmd/server
 
 build-all: build-ctl build-server
 
@@ -54,8 +58,4 @@ lint:
 clean:
 	@rm -rf bin/
 
-deps:
-	@go mod download
-	@go mod verify
-
-all: deps test build
+all: deps test build-all
