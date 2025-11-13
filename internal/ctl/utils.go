@@ -7,8 +7,18 @@ import (
 	"github.com/etoneja/go-keeper/internal/ctl/constants"
 )
 
-func CheckFileSize(filePath string) error {
-	info, err := os.Stat(filePath)
+type FileChecker struct {
+	statFunc func(string) (os.FileInfo, error)
+}
+
+func NewFileChecker() *FileChecker {
+	return &FileChecker{
+		statFunc: os.Stat,
+	}
+}
+
+func (f *FileChecker) CheckFileSize(filePath string) error {
+	info, err := f.statFunc(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}

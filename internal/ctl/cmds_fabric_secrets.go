@@ -42,7 +42,8 @@ func createSecretHandler(secretType string) func(cmd *cobra.Command, args []stri
 			}
 		case constants.SecretTypeBinary:
 			filePath := getStringFlag(cmd, "file")
-			if err := CheckFileSize(filePath); err != nil {
+			checker := NewFileChecker()
+			if err := checker.CheckFileSize(filePath); err != nil {
 				return err
 			}
 			content, err := os.ReadFile(filePath)

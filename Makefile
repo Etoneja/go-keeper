@@ -28,6 +28,7 @@ genmocks:
 	mockgen -source=internal/server/token/interfaces.go -destination=internal/server/token/mocks.go -package=token
 	mockgen -source=internal/server/repository/interfaces.go -destination=internal/server/repository/mocks.go -package=repository
 	mockgen -source=internal/server/interfaces.go -destination=internal/server/mocks.go -package=server
+	mockgen -source=internal/ctl/crypto/interfaces.go -destination=internal/ctl/crypto/mocks.go -package=crypto
 
 test:
 	@go test -v ./...
