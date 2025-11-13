@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -26,20 +27,32 @@ func TestLoadCfg(t *testing.T) {
 	defer func() {
 		for envVar, value := range originalEnv {
 			if value == "" {
-				os.Unsetenv(envVar)
+				if err := os.Unsetenv(envVar); err != nil {
+					log.Printf("Error unsetting env var %s: %v", envVar, err)
+				}
 			} else {
-				os.Setenv(envVar, value)
+				if err := os.Setenv(envVar, value); err != nil {
+					log.Printf("Error setting env var %s: %v", envVar, err)
+				}
 			}
 		}
 	}()
 
 	t.Run("success", func(t *testing.T) {
-		os.Setenv("GOKEEPER_DB_USER", "testuser")
-		os.Setenv("GOKEEPER_DB_PASSWORD", "testpass")
-		os.Setenv("GOKEEPER_DB_HOST", "localhost")
-		os.Setenv("GOKEEPER_DB_PORT", "5432")
-		os.Setenv("GOKEEPER_DB_NAME", "testdb")
-		os.Setenv("GOKEEPER_JWT_SECRET", "jwtsecret123")
+		envVars := map[string]string{
+			"GOKEEPER_DB_USER":     "testuser",
+			"GOKEEPER_DB_PASSWORD": "testpass",
+			"GOKEEPER_DB_HOST":     "localhost",
+			"GOKEEPER_DB_PORT":     "5432",
+			"GOKEEPER_DB_NAME":     "testdb",
+			"GOKEEPER_JWT_SECRET":  "jwtsecret123",
+		}
+
+		for envVar, value := range envVars {
+			if err := os.Setenv(envVar, value); err != nil {
+				log.Printf("Error setting env var %s: %v", envVar, err)
+			}
+		}
 
 		cfg, err := LoadCfg()
 		require.NoError(t, err)
@@ -48,12 +61,23 @@ func TestLoadCfg(t *testing.T) {
 	})
 
 	t.Run("missing jwt secret", func(t *testing.T) {
-		os.Setenv("GOKEEPER_DB_USER", "testuser")
-		os.Setenv("GOKEEPER_DB_PASSWORD", "testpass")
-		os.Setenv("GOKEEPER_DB_HOST", "localhost")
-		os.Setenv("GOKEEPER_DB_PORT", "5432")
-		os.Setenv("GOKEEPER_DB_NAME", "testdb")
-		os.Unsetenv("GOKEEPER_JWT_SECRET")
+		envVars := map[string]string{
+			"GOKEEPER_DB_USER":     "testuser",
+			"GOKEEPER_DB_PASSWORD": "testpass",
+			"GOKEEPER_DB_HOST":     "localhost",
+			"GOKEEPER_DB_PORT":     "5432",
+			"GOKEEPER_DB_NAME":     "testdb",
+		}
+
+		for envVar, value := range envVars {
+			if err := os.Setenv(envVar, value); err != nil {
+				log.Printf("Error setting env var %s: %v", envVar, err)
+			}
+		}
+
+		if err := os.Unsetenv("GOKEEPER_JWT_SECRET"); err != nil {
+			log.Printf("Error unsetting env var GOKEEPER_JWT_SECRET: %v", err)
+		}
 
 		cfg, err := LoadCfg()
 		require.Error(t, err)
@@ -62,13 +86,20 @@ func TestLoadCfg(t *testing.T) {
 	})
 
 	t.Run("empty db values", func(t *testing.T) {
-		os.Setenv("GOKEEPER_DB_USER", "")
-		os.Setenv("GOKEEPER_DB_PASSWORD", "")
-		os.Setenv("GOKEEPER_DB_HOST", "")
-		os.Setenv("GOKEEPER_DB_PORT", "")
-		os.Setenv("GOKEEPER_DB_NAME", "")
-		os.Setenv("GOKEEPER_JWT_SECRET", "jwtsecret123")
+		envVars := map[string]string{
+			"GOKEEPER_DB_USER":     "",
+			"GOKEEPER_DB_PASSWORD": "",
+			"GOKEEPER_DB_HOST":     "",
+			"GOKEEPER_DB_PORT":     "",
+			"GOKEEPER_DB_NAME":     "",
+			"GOKEEPER_JWT_SECRET":  "jwtsecret123",
+		}
 
+		for envVar, value := range envVars {
+			if err := os.Setenv(envVar, value); err != nil {
+				log.Printf("Error setting env var %s: %v", envVar, err)
+			}
+		}
 		cfg, err := LoadCfg()
 		require.NoError(t, err)
 		assert.Equal(t, "postgres://:@:/?sslmode=disable", cfg.DBURL)

@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,7 +28,11 @@ func (r *Repositories) WithTx(ctx context.Context, db *pgxpool.Pool, fn func(Que
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if rollbackErr := tx.Rollback(ctx); rollbackErr != nil && !errors.Is(rollbackErr, pgx.ErrTxClosed) {
+			log.Printf("Warning: transaction rollback failed: %v", rollbackErr)
+		}
+	}()
 
 	if err := fn(tx); err != nil {
 		return err

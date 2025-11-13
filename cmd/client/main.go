@@ -25,7 +25,11 @@ func main() {
 
 	cli := client.NewGRPCClient(cfg.ServerAddress, cfg.Login, serverPassword)
 
-	defer cli.Close()
+	defer func() {
+		if err := cli.Close(); err != nil {
+			log.Printf("Error closing client: %v", err)
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

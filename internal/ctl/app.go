@@ -2,6 +2,7 @@ package ctl
 
 import (
 	"context"
+	"log"
 
 	"github.com/etoneja/go-keeper/internal/ctl/config"
 	"github.com/spf13/cobra"
@@ -55,6 +56,8 @@ func (a *App) initializeService(cmd *cobra.Command, args []string) {
 
 func (a *App) Close() {
 	if a.service != nil {
-		a.service.Close()
+		if err := a.service.Close(); err != nil {
+			log.Printf("Error closing service: %v", err)
+		}
 	}
 }

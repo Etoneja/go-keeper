@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/mattn/go-sqlite3"
 )
@@ -26,10 +27,16 @@ func deserializeInMemoryDBFromBytes(ctx context.Context, data []byte) (*sql.DB, 
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Error closing database during error handling: %v", closeErr)
+		}
 		return nil, err
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
+	}()
 
 	err = conn.Raw(func(driverConn any) error {
 		sqliteConn, ok := driverConn.(*sqlite3.SQLiteConn)
@@ -43,7 +50,9 @@ func deserializeInMemoryDBFromBytes(ctx context.Context, data []byte) (*sql.DB, 
 		return nil
 	})
 	if err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Error closing database during error handling: %v", closeErr)
+		}
 		return nil, err
 	}
 
@@ -57,7 +66,11 @@ func serializeInMemoryDBToBytes(ctx context.Context, db *sql.DB) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
+	}()
 
 	err = conn.Raw(func(driverConn any) error {
 		sqliteConn, ok := driverConn.(*sqlite3.SQLiteConn)

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/etoneja/go-keeper/internal/ctl/crypto"
@@ -189,7 +190,11 @@ func (s *SQLiteStorage) ListSecrets(ctx context.Context) ([]*types.LocalSecret, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var secrets []*types.LocalSecret
 	for rows.Next() {

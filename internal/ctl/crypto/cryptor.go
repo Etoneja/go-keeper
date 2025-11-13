@@ -64,7 +64,10 @@ func (c *CryptorImpl) getServerKey() []byte {
 
 func (c *CryptorImpl) EncryptStorageData(plainData []byte) ([]byte, error) {
 	salt := make([]byte, storageSaltSize)
-	rand.Read(salt)
+
+	if _, err := rand.Read(salt); err != nil {
+		return nil, fmt.Errorf("generate salt: %w", err)
+	}
 
 	key := c.genDeriveKey(salt)
 	encrypted, err := c.encryptWithKey(plainData, key)

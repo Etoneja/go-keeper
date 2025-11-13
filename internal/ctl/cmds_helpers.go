@@ -15,21 +15,17 @@ func init() {
 	addPasswordCmd.Flags().String("password", "", "Password (required)")
 	addPasswordCmd.Flags().String("url", "", "URL (optional)")
 	addPasswordCmd.Flags().String("metadata", "", "Metadata (optional)")
-	addPasswordCmd.MarkFlagRequired("name")
-	addPasswordCmd.MarkFlagRequired("username")
-	addPasswordCmd.MarkFlagRequired("password")
+	markFlagsRequired(addPasswordCmd, "name", "username", "password")
 
 	addTextCmd.Flags().String("name", "", "Secret name (required)")
 	addTextCmd.Flags().String("content", "", "Text content (required)")
 	addTextCmd.Flags().String("metadata", "", "Metadata (optional)")
-	addTextCmd.MarkFlagRequired("name")
-	addTextCmd.MarkFlagRequired("content")
+	markFlagsRequired(addTextCmd, "name", "content")
 
 	addBinaryCmd.Flags().String("name", "", "Secret name (required)")
 	addBinaryCmd.Flags().String("file", "", "File path (required)")
 	addBinaryCmd.Flags().String("metadata", "", "Metadata (optional)")
-	addBinaryCmd.MarkFlagRequired("name")
-	addBinaryCmd.MarkFlagRequired("file")
+	markFlagsRequired(addBinaryCmd, "name", "file")
 
 	addCardCmd.Flags().String("name", "", "Secret name (required)")
 	addCardCmd.Flags().String("number", "", "Card number (required)")
@@ -37,11 +33,7 @@ func init() {
 	addCardCmd.Flags().String("expiry", "", "Expiry date (required)")
 	addCardCmd.Flags().String("cvv", "", "CVV code (required)")
 	addCardCmd.Flags().String("metadata", "", "Metadata (optional)")
-	addCardCmd.MarkFlagRequired("name")
-	addCardCmd.MarkFlagRequired("number")
-	addCardCmd.MarkFlagRequired("holder")
-	addCardCmd.MarkFlagRequired("expiry")
-	addCardCmd.MarkFlagRequired("cvv")
+	markFlagsRequired(addCardCmd, "name", "number", "holder", "expiry", "cvv")
 
 	getCmd.Flags().Bool("full", false, "Show all data including passwords/CVV")
 	getCmd.Flags().String("export", "", "Export to file path")
@@ -50,6 +42,14 @@ func init() {
 	addCmd.AddCommand(addTextCmd)
 	addCmd.AddCommand(addBinaryCmd)
 	addCmd.AddCommand(addCardCmd)
+}
+
+func markFlagsRequired(cmd *cobra.Command, flags ...string) {
+	for _, flag := range flags {
+		if err := cmd.MarkFlagRequired(flag); err != nil {
+			log.Fatalf("Error marking flag %s required: %v", flag, err)
+		}
+	}
 }
 
 func addCommands(rootCmd *cobra.Command) {
