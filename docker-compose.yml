@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: go-app-postgres
+    environment:
+      POSTGRES_DB: ${GOKEEPER_DB_NAME:-gokeeper}
+      POSTGRES_USER: ${GOKEEPER_DB_USER:-gokeeper}
+      POSTGRES_PASSWORD: ${GOKEEPER_DB_PASSWORD:-gokeeper}
+    ports:
+      - "${GOKEEPER_DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GOKEEPER_DB_USER:-gokeeper} -d ${GOKEEPER_DB_NAME:-gokeeper}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    container_name: go-app-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
